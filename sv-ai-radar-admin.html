@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硅谷AI雷达 · 内容管理后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --primary: #e63946;
+  --wechat: #07C160;
+  --blue: #1d6fa4;
+  --text: #1a1a1a;
+  --text2: #555;
+  --text3: #999;
+  --border: #e8e8e8;
+  --bg: #f5f5f5;
+  --white: #fff;
+  --sidebar: #1a1a2e;
+  --sidebar-active: #e63946;
+}
+body { font-family:'Noto Sans SC',-apple-system,"PingFang SC",sans-serif; background:var(--bg); color:var(--text); font-size:14px; display:flex; min-height:100vh; }
+
+/* SIDEBAR */
+.sidebar { width:220px; background:var(--sidebar); color:#fff; flex-shrink:0; display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100; }
+.sidebar-logo { padding:20px 18px 16px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sidebar-logo-top { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.sidebar-badge { background:var(--primary); font-size:11px; font-weight:700; padding:2px 7px; }
+.sidebar-title { font-size:15px; font-weight:700; letter-spacing:1px; }
+.sidebar-sub { font-size:11px; color:rgba(255,255,255,0.4); letter-spacing:1px; }
+.sidebar-nav { padding:12px 0; flex:1; }
+.sidebar-section { font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:2px; padding:10px 18px 4px; text-transform:uppercase; }
+.nav-btn { display:flex; align-items:center; gap:9px; width:100%; padding:10px 18px; font-size:13px; color:rgba(255,255,255,0.65); background:none; border:none; cursor:pointer; text-align:left; transition:all 0.15s; font-family:inherit; }
+.nav-btn:hover { color:#fff; background:rgba(255,255,255,0.06); }
+.nav-btn.active { color:#fff; background:rgba(230,57,70,0.2); border-left:3px solid var(--primary); }
+.nav-btn .icon { font-size:15px; width:18px; text-align:center; }
+.sidebar-footer { padding:16px 18px; border-top:1px solid rgba(255,255,255,0.08); font-size:11px; color:rgba(255,255,255,0.3); }
+.sidebar-footer a { color:var(--wechat); text-decoration:none; }
+
+/* MAIN */
+.main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:0 28px; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar-title { font-size:15px; font-weight:700; }
+.topbar-actions { display:flex; gap:10px; align-items:center; }
+.btn { padding:7px 16px; border-radius:2px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:inherit; transition:all 0.15s; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { opacity:0.85; }
+.btn-ghost { background:#fff; color:var(--text2); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:#999; color:var(--text); }
+.btn-green { background:var(--wechat); color:#fff; }
+.btn-green:hover { opacity:0.85; }
+.btn-sm { padding:4px 10px; font-size:12px; }
+.btn-danger { background:#fff; color:var(--primary); border:1px solid #fcc; }
+.btn-danger:hover { background:#fde8e8; }
+
+.content { padding:24px 28px; flex:1; }
+.page { display:none; }
+.page.active { display:block; }
+
+/* WEEK SELECTOR */
+.week-bar { background:var(--white); border:1px solid var(--border); padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.week-bar label { font-size:12px; font-weight:600; color:var(--text2); }
+.week-select { border:1px solid var(--border); padding:6px 10px; font-size:13px; font-family:inherit; color:var(--text); outline:none; border-radius:2px; }
+.week-select:focus { border-color:var(--primary); }
+.issue-tag { font-size:11px; background:#fde8e8; color:var(--primary); padding:3px 9px; border-radius:2px; font-weight:600; }
+
+/* CARDS EDITOR */
+.editor-grid { display:flex; flex-direction:column; gap:16px; }
+.editor-card { background:var(--white); border:1px solid var(--border); overflow:hidden; }
+.editor-card-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:#fafafa; }
+.editor-card-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.editor-card-num { background:var(--primary); color:#fff; font-size:10px; padding:1px 6px; border-radius:1px; }
+.editor-card-body { padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.editor-card-body.single { grid-template-columns:1fr; }
+.editor-card-body.triple { grid-template-columns:1fr 1fr 1fr; }
+.field { display:flex; flex-direction:column; gap:4px; }
+.field.full { grid-column:1/-1; }
+.field label { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:1px; }
+.field input, .field select, .field textarea { border:1px solid var(--border); padding:8px 10px; font-size:13px; font-family:inherit; color:var(--text); outline:none; border-radius:2px; transition:border-color 0.15s; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--primary); }
+.field textarea { resize:vertical; min-height:90px; line-height:1.6; }
+
+/* TAGS */
+.tag-selector { display:flex; gap:6px; flex-wrap:wrap; }
+.tag-opt { font-size:11px; padding:3px 9px; border-radius:2px; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:#f8f8f8; transition:all 0.1s; user-select:none; }
+.tag-opt.selected { border-color:var(--primary); background:#fde8e8; color:var(--primary); font-weight:600; }
+.impact-opt { font-size:11px; padding:3px 9px; border-radius:10px; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:#f8f8f8; transition:all 0.1s; user-select:none; }
+.impact-opt.high.selected { background:#fde8e8; color:var(--primary); border-color:var(--primary); }
+.impact-opt.mid.selected { background:#fef3e6; color:#f4841f; border-color:#f4841f; }
+
+/* HUB EDITOR */
+.hub-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-bottom:16px; }
+.hub-edit-card { background:var(--white); border:1px solid var(--border); padding:16px; position:relative; }
+.hub-edit-card:hover { border-color:#ccc; }
+.hub-edit-card .delete-btn { position:absolute; top:10px; right:10px; background:none; border:none; color:#ccc; cursor:pointer; font-size:16px; line-height:1; }
+.hub-edit-card .delete-btn:hover { color:var(--primary); }
+.avatar-preview { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; margin-bottom:10px; }
+.color-picker-row { display:flex; gap:6px; margin-top:4px; }
+.color-dot { width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+.color-dot.selected { border-color:var(--text); }
+.add-contact-btn { border:2px dashed var(--border); background:none; width:100%; padding:20px; cursor:pointer; color:var(--text3); font-size:13px; font-family:inherit; transition:all 0.15s; border-radius:2px; }
+.add-contact-btn:hover { border-color:var(--primary); color:var(--primary); }
+
+/* STATUS BAR */
+.status-bar { position:fixed; bottom:20px; right:28px; background:var(--text); color:#fff; padding:10px 18px; font-size:13px; border-radius:2px; display:none; z-index:999; gap:8px; align-items:center; }
+.status-bar.show { display:flex; }
+.status-bar.success { background:#07C160; }
+.status-bar.error { background:var(--primary); }
+
+/* AI PROMPT BOX */
+.prompt-box { background:var(--sidebar); color:#e2e8f0; padding:20px; font-size:13px; line-height:1.8; font-family:'SF Mono','Fira Code',monospace; white-space:pre-wrap; overflow-x:auto; margin:16px 0; border-radius:2px; }
+.prompt-box .comment { color:#64748b; }
+.prompt-box .key { color:#7dd3fc; }
+.prompt-box .val { color:#86efac; }
+.prompt-box .bracket { color:#f59e0b; }
+
+/* SECTION DIVIDER */
+.sec-title { font-size:13px; font-weight:700; color:var(--text2); display:flex; align-items:center; gap:8px; margin:20px 0 10px; }
+.sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* NOTICE */
+.notice { padding:12px 16px; font-size:13px; margin-bottom:16px; display:flex; gap:10px; align-items:flex-start; border-radius:2px; }
+.notice-info { background:#e8f0f8; color:var(--blue); border:1px solid #b3cfe8; }
+.notice-success { background:#e8f8ee; color:#2a9d5c; border:1px solid #b7dfc5; }
+
+@media(max-width:768px) {
+  .sidebar { width:100%; position:relative; height:auto; }
+  .main { margin-left:0; }
+  .editor-card-body { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-top">
+      <span class="sidebar-badge">SV</span>
+      <span class="sidebar-title">AI雷达后台</span>
+    </div>
+    <div class="sidebar-sub">内容管理系统</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">内容管理</div>
+    <button class="nav-btn active" onclick="showPage('news',this)"><span class="icon">📰</span>每周大事</button>
+    <button class="nav-btn" onclick="showPage('products',this)"><span class="icon">🎯</span>ToC 产品雷达</button>
+    <button class="nav-btn" onclick="showPage('hardware',this)"><span class="icon">🔩</span>AI × 硬件</button>
+    <button class="nav-btn" onclick="showPage('hub',this)"><span class="icon">🤝</span>AI 行业 Hub</button>
+    <div class="sidebar-section">工具</div>
+    <button class="nav-btn" onclick="showPage('prompt',this)"><span class="icon">🤖</span>龙虾 Prompt</button>
+    <button class="nav-btn" onclick="showPage('export',this)"><span class="icon">📤</span>导出 / 发布</button>
+  </nav>
+  <div class="sidebar-footer">
+    微信市场部 · 内部工具<br>
+    <a href="sv-ai-radar.html" target="_blank">→ 查看前端页面</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">每周大事 编辑</div>
+    <div class="topbar-actions">
+      <span class="issue-tag" id="current-issue">第12期 · 2026.03.24</span>
+      <button class="btn btn-ghost btn-sm" onclick="newIssue()">+ 新建一期</button>
+      <button class="btn btn-primary btn-sm" onclick="saveAll()">💾 保存</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- 期数选择栏（所有页共用） -->
+    <div class="week-bar">
+      <label>当前期数：</label>
+      <select class="week-select" id="issue-select" onchange="loadIssue(this.value)">
+        <option value="12">第12期 · 2026.03.24</option>
+        <option value="11">第11期 · 2026.03.17</option>
+        <option value="10">第10期 · 2026.03.10</option>
+      </select>
+      <label>更新时间：</label>
+      <input type="date" class="week-select" id="issue-date" value="2026-03-24">
+      <button class="btn btn-ghost btn-sm" onclick="saveIssueInfo()">更新</button>
+    </div>
+
+    <!-- ── 每周大事 ── -->
+    <div id="page-news" class="page active">
+      <div class="notice notice-info">💡 每条新闻填写标题、摘要、来源链接即可。龙虾每周检索后按此格式填入。</div>
+      <div class="editor-grid" id="news-editor">
+        <!-- 动态渲染 -->
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-ghost" onclick="addNewsCard()">+ 添加一条新闻</button>
+      </div>
+    </div>
+
+    <!-- ── ToC 产品 ── -->
+    <div id="page-products" class="page">
+      <div class="notice notice-info">💡 每个产品卡片填写名称、定位、介绍、关注点标签和团队社交链接。</div>
+      <div class="editor-grid" id="products-editor"></div>
+      <div style="margin-top:14px">
+        <button class="btn btn-ghost" onclick="addProductCard()">+ 添加一个产品</button>
+      </div>
+    </div>
+
+    <!-- ── 硬件 ── -->
+    <div id="page-hardware" class="page">
+      <div class="notice notice-info">💡 填写设备名、厂商、状态标签、描述和规格参数。</div>
+      <div class="editor-grid" id="hardware-editor"></div>
+      <div style="margin-top:14px">
+        <button class="btn btn-ghost" onclick="addHardwareCard()">+ 添加一个硬件</button>
+      </div>
+    </div>
+
+    <!-- ── AI 行业 Hub ── -->
+    <div id="page-hub" class="page">
+      <div class="notice notice-success">✅ 行业 Hub 的修改会立即保存，无需等到发布。联系人信息直接在这里维护。</div>
+      <div class="sec-title">联系人管理</div>
+      <div class="hub-grid" id="hub-editor"></div>
+      <button class="add-contact-btn" onclick="addContact()">＋ 添加联系人</button>
+    </div>
+
+    <!-- ── 龙虾 Prompt ── -->
+    <div id="page-prompt" class="page">
+      <div class="notice notice-info">📋 把下面的 Prompt 发给龙虾，它会按格式检索并返回结构化内容，你直接粘贴到对应板块即可。</div>
+
+      <div class="sec-title">每周大事 Prompt</div>
+      <div class="prompt-box"><span class="comment"># 硅谷AI雷达 · 每周大事检索任务</span>
+
+你是一个 AI 行业情报助手，请帮我检索本周（过去7天）硅谷 AI 行业的重要动态。
+
+<span class="key">检索重点：</span>
+<span class="val">- 大模型版本更新（OpenAI、Anthropic、Google、Meta、xAI 等）
+- 重要技术突破或论文
+- 核心人才流动（高管离职/加入/创业）
+- 重大融资或商业里程碑</span>
+
+<span class="key">信息来源优先级：</span>
+<span class="val">1. 官方博客 / 新闻稿
+2. TechCrunch、The Verge、Bloomberg
+3. LLM Stats、Build Fast With AI</span>
+
+<span class="key">输出格式（每条新闻）：</span>
+<span class="bracket">{</span>
+  <span class="key">"title"</span>: <span class="val">"新闻标题（中文，20字以内）"</span>,
+  <span class="key">"tags"</span>: <span class="val">["标签1","标签2"]</span>,  <span class="comment">// 从：大模型/开源/视频生成/人才流动/商业/硬件 中选</span>
+  <span class="key">"impact"</span>: <span class="val">"高影响 / 中影响 / 持续关注"</span>,
+  <span class="key">"date"</span>: <span class="val">"X月X日"</span>,
+  <span class="key">"body"</span>: <span class="val">"摘要（中文，100-150字，客观陈述，不加判断）"</span>,
+  <span class="key">"sources"</span>: [<span class="val">{"name":"来源名","url":"链接"}</span>]
+<span class="bracket">}</span>
+
+请输出 5-8 条，按影响力从高到低排序，直接输出 JSON 数组，不要多余文字。</div>
+
+      <div class="sec-title">ToC 产品雷达 Prompt</div>
+      <div class="prompt-box"><span class="comment"># 硅谷AI雷达 · ToC 产品检索任务</span>
+
+请检索本周在以下平台出现的值得关注的 AI 消费端产品：
+
+<span class="key">检索来源：</span>
+<span class="val">- producthunt.com（本周/本月 Top 榜）
+- bensbites.com（最新一期 newsletter）
+- theresanaiforthat.com（trending 产品）
+- a16z Top 100 Gen AI Consumer Apps（如有更新）</span>
+
+<span class="key">筛选标准：</span>
+<span class="val">- 面向普通消费者，不是纯开发者工具
+- 有明确产品形态（不是概念）
+- 创始人/团队有可查背景</span>
+
+<span class="key">输出格式（每个产品）：</span>
+<span class="bracket">{</span>
+  <span class="key">"name"</span>: <span class="val">"产品名"</span>,
+  <span class="key">"en_sub"</span>: <span class="val">"英文副标题/品类"</span>,
+  <span class="key">"status"</span>: <span class="val">"已上线 / 内测中 / 开发中"</span>,
+  <span class="key">"tagline"</span>: <span class="val">"一句话定位（中文）"</span>,
+  <span class="key">"body"</span>: <span class="val">"产品介绍（150字，包含对国内的启示）"</span>,
+  <span class="key">"points"</span>: [<span class="val">"关注点1","关注点2","关注点3"</span>],
+  <span class="key">"team"</span>: [<span class="bracket">{</span><span class="key">"name"</span>:<span class="val">"姓名"</span>,<span class="key">"role"</span>:<span class="val">"职位"</span>,<span class="key">"twitter"</span>:<span class="val">"x.com/xxx"</span>,<span class="key">"linkedin"</span>:<span class="val">"linkedin.com/in/xxx"</span><span class="bracket">}</span>],
+  <span class="key">"sources"</span>: [<span class="val">{"name":"Product Hunt","url":"链接"}</span>]
+<span class="bracket">}</span>
+
+输出 3-4 个产品，直接输出 JSON 数组。</div>
+
+      <div class="sec-title">硬件板块 Prompt</div>
+      <div class="prompt-box"><span class="comment"># 硅谷AI雷达 · AI 硬件检索任务</span>
+
+请检索本周 AI 硬件领域的重要动态，重点关注：
+
+<span class="key">来源：</span>
+<span class="val">- theverge.com（AI/Hardware 栏目）
+- techcrunch.com（Hardware 分类）
+- bloomberg.com（科技版块）</span>
+
+<span class="key">关注品类：</span>
+<span class="val">AI 可穿戴、AI 专用芯片、边缘计算设备、AI 手机/PC、机器人</span>
+
+<span class="key">输出格式：</span>
+<span class="bracket">{</span>
+  <span class="key">"name"</span>: <span class="val">"设备名"</span>,
+  <span class="key">"maker"</span>: <span class="val">"厂商 · 发布时间/状态"</span>,
+  <span class="key">"status_tag"</span>: <span class="val">"已上市 / 量产准备中 / 开发中 / 概念阶段"</span>,
+  <span class="key">"icon"</span>: <span class="val">"一个 emoji"</span>,
+  <span class="key">"desc"</span>: <span class="val">"描述（120字）"</span>,
+  <span class="key">"specs"</span>: [<span class="bracket">{</span><span class="key">"k"</span>:<span class="val">"形态"</span>,<span class="key">"v"</span>:<span class="val">"xxx"</span><span class="bracket">}</span>, ...],
+  <span class="key">"sources"</span>: [<span class="val">{"name":"The Verge","url":"链接"}</span>]
+<span class="bracket">}</span>
+
+输出 3-5 个，直接输出 JSON 数组。</div>
+
+      <button class="btn btn-ghost" onclick="copyPrompt(this)" style="margin-top:8px">📋 复制全部 Prompt</button>
+    </div>
+
+    <!-- ── 导出发布 ── -->
+    <div id="page-export" class="page">
+      <div class="notice notice-info">📤 导出后将当前所有内容写入前端页面，替换原有内容。</div>
+
+      <div class="sec-title">发布检查</div>
+      <div class="editor-card">
+        <div class="editor-card-header">
+          <span class="editor-card-title">本期内容概览</span>
+        </div>
+        <div style="padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+          <div style="text-align:center;padding:16px;background:#fafafa;border:1px solid var(--border);">
+            <div style="font-size:28px;font-weight:700;color:var(--primary)" id="count-news">0</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">每周大事</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:#fafafa;border:1px solid var(--border);">
+            <div style="font-size:28px;font-weight:700;color:var(--blue)" id="count-products">0</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">产品雷达</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:#fafafa;border:1px solid var(--border);">
+            <div style="font-size:28px;font-weight:700;color:#f4841f" id="count-hardware">0</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">AI 硬件</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:#fafafa;border:1px solid var(--border);">
+            <div style="font-size:28px;font-weight:700;color:#07C160" id="count-hub">0</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">Hub 联系人</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-title">导出操作</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="exportJSON()">📥 导出本期 JSON</button>
+        <button class="btn btn-green" onclick="generateHTML()">🚀 生成前端 HTML</button>
+        <button class="btn btn-ghost" onclick="importJSON()">📂 导入历史期数</button>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text3)">
+        导出的 JSON 文件可以交给龙虾做下一期内容参考，也可以归档保存。生成前端 HTML 后直接替换发给同事的链接即可。
+      </div>
+
+      <div class="sec-title">历史存档</div>
+      <div id="archive-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="status-bar">
+  <span id="status-text">已保存</span>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// DATA STORE
+// ═══════════════════════════════════
+const STORAGE_KEY = 'sv_ai_radar_data';
+
+const DEFAULT_DATA = {
+  currentIssue: 12,
+  issueDate: '2026-03-24',
+  issues: {
+    12: {
+      news: [
+        { title:'GPT-5.4 上线：百万 Token 上下文窗口，AI 自动化全面跃升', tags:['大模型','重磅发布'], impact:'高影响', date:'3月5日', body:'OpenAI 发布 GPT-5.4，支持 105 万 token 超长上下文。新版本事实准确性比 GPT-5.2 减少 33% 错误，推出"Tool Search"动态工具调用机制，同期推出 GPT-5.4 Thinking 和 Pro 变体及 ChatGPT for Excel 插件。', sources:[{name:'OpenAI Blog',url:'https://openai.com/blog'},{name:'RiskInfo AI',url:'https://www.riskinfo.ai/post/ai-insights-key-global-developments-in-march-2026'}] },
+        { title:'Qwen 3.5 9B：90亿参数媲美千亿闭源模型', tags:['开源','大模型'], impact:'高影响', date:'3月8日', body:'阿里巴巴开源的 Qwen 3.5 9B 在 GPQA Diamond 研究生推理基准上拿到 81.7%，与 OpenAI 120B 参数量级模型持平。同期 MiniMax M2.5 以极低成本媲美 Claude Opus 4.6。', sources:[{name:'Hugging Face',url:'https://huggingface.co/Qwen'}] },
+        { title:'Helios 与 LTX 2.3 同周发布，视频 AI 进入新阶段', tags:['视频生成','技术突破'], impact:'高影响', date:'3月8日', body:'ByteDance、北大与 Canva 联合发布 Helios，实时速度单 GPU 生成一分钟视频。同周 Lightricks 推出 LTX 2.3，支持 4K 原生输出并同步生成音频。', sources:[{name:'Build Fast With AI',url:'https://www.buildfastwithai.com/blogs/ai-models-march-2026-releases'}] },
+        { title:'Meta 收购 Dreamer，Hugo Barra 重回扎克伯格麾下', tags:['人才流动'], impact:'中影响', date:'3月22日', body:'AI 初创 Dreamer 及整个团队被 Meta Superintelligence Labs 收购，联合创始人 Hugo Barra（前 Meta VP、前小米全球副总裁）回归 Meta。', sources:[{name:'TechCrunch',url:'https://techcrunch.com'}] },
+        { title:'OpenAI 年化营收破 250 亿美元，传年底谋求上市', tags:['商业','融资/IPO'], impact:'高影响', date:'3月20日', body:'OpenAI 年化营收超 250 亿美元，Anthropic 以近 190 亿美元紧随其后。AI 大模型市场已成为科技行业增速最快赛道。', sources:[{name:'Crescendo AI',url:'https://www.crescendo.ai/news/latest-ai-news-and-updates'}] }
+      ],
+      products: [
+        { name:'Typeless', en_sub:'Voice-First AI Interface', status:'内测中', tagline:'用说话彻底取代打字，重新定义人机交互入口', body:'让普通用户完全用语音控制日常应用，不再需要键盘。在输入效率、无障碍使用和移动端体验三个维度同时发力。', points:['创始人背景强','交互范式创新','移动端优先','无障碍场景'], team:[{name:'Dom Sipowicz',role:'CEO',twitter:'https://x.com/domsipowicz',linkedin:'https://www.linkedin.com/in/domsipowicz'}], sources:[{name:'Product Hunt',url:'https://www.producthunt.com'},{name:"Ben's Bites",url:'https://www.bensbites.com'}] },
+        { name:'Lovable', en_sub:'AI Full-Stack Builder', status:'已上线', tagline:'自然语言生成完整 Web 应用，非技术用户也能一键部署', body:'a16z Top 100 第22名，vibe coding 品类留存率最高产品之一。Product Hunt 月度榜单连续上榜，Ben\'s Bites 重点推荐。', points:['非技术用户爆发','a16z Top 100 #22','高留存率','vibe coding 标杆'], team:[{name:'Anton Osika',role:'CEO',twitter:'https://x.com/antonosika',linkedin:'https://www.linkedin.com/in/antonosika'}], sources:[{name:'Product Hunt',url:'https://www.producthunt.com/leaderboard/monthly/2026/3'},{name:'a16z Top 100',url:'https://a16z.com/100-gen-ai-apps-6/'}] }
+      ],
+      hardware: [
+        { name:'Meta Ray-Ban 智能眼镜', maker:'Meta · 量产在售', status_tag:'已上市', icon:'🕶️', desc:'目前 AI 硬件销量最高消费品之一，过去一年出货数百万副。内置摄像头、麦克风和 AI 助手，支持免提拍摄和实时视觉理解。', specs:[{k:'形态',v:'太阳镜 / 眼镜框'},{k:'核心',v:'视觉感知 + 语音助手'},{k:'价格',v:'$299 起'}], team:[{name:'Mark Zuckerberg',role:'CEO',twitter:'https://x.com/zuck',linkedin:'https://www.linkedin.com/in/zuck'}], sources:[{name:'The Verge',url:'https://www.theverge.com'}] },
+        { name:'OpenAI × Jony Ive AI 设备', maker:'OpenAI · 预计 2026 H2', status_tag:'开发中', icon:'📦', desc:'OpenAI 以 64 亿美元收购 Jony Ive 的硬件公司 io 后联合打造。无屏幕、口袋大小、语音主交互，目标出货 1 亿台。', specs:[{k:'形态',v:'口袋设备（无屏幕）'},{k:'设计师',v:'Jony Ive（前苹果）'},{k:'目标',v:'1 亿台出货'}], team:[{name:'Sam Altman',role:'CEO',twitter:'https://x.com/sama',linkedin:'https://www.linkedin.com/in/samaltman'}], sources:[{name:'TechCrunch',url:'https://techcrunch.com'},{name:'Built In',url:'https://builtin.com/articles/openai-device'}] }
+      ]
+    }
+  },
+  hub: [
+    { name:'Sam Altman', title:'CEO', company:'OpenAI', color:'#e63946', twitter:'https://x.com/sama', linkedin:'https://www.linkedin.com/in/samaltman' },
+    { name:'Dario Amodei', title:'CEO', company:'Anthropic', color:'#1d6fa4', twitter:'https://x.com/DarioAmodei', linkedin:'https://www.linkedin.com/in/dario-amodei-3934934' },
+    { name:'Jensen Huang', title:'CEO', company:'NVIDIA', color:'#6d4c9e', twitter:'https://x.com/jensenhuang', linkedin:'https://www.linkedin.com/in/jenhsunhuang' },
+    { name:'Aravind Srinivas', title:'CEO', company:'Perplexity AI', color:'#2a9d5c', twitter:'https://x.com/AravSrinivas', linkedin:'https://www.linkedin.com/in/aravindsrinivas' },
+    { name:'Cristóbal Valenzuela', title:'CEO', company:'Runway ML', color:'#f4841f', twitter:'https://x.com/c_valenzuelab', linkedin:'https://www.linkedin.com/in/cristobalvalenzuela' },
+    { name:'Anton Osika', title:'CEO', company:'Lovable', color:'#0a66c2', twitter:'https://x.com/antonosika', linkedin:'https://www.linkedin.com/in/antonosika' }
+  ]
+};
+
+const AVATAR_COLORS = ['#e63946','#1d6fa4','#2a9d5c','#f4841f','#6d4c9e','#0a66c2','#e07b39','#0891b2'];
+const TAG_OPTIONS = ['大模型','开源','视频生成','人才流动','商业','融资/IPO','硬件','技术突破','企业级','重磅发布'];
+const STATUS_OPTIONS = { news: ['已上市','量产准备中','开发中','概念阶段'], product: ['已上线','内测中','开发中','即将发布'] };
+
+let appData = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT_DATA;
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  showStatus('已自动保存', 'success');
+}
+
+// ═══════════════════════════════════
+// NAV
+// ═══════════════════════════════════
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  const titles = { news:'每周大事 编辑', products:'ToC 产品雷达 编辑', hardware:'AI × 硬件 编辑', hub:'AI 行业 Hub 管理', prompt:'龙虾 Prompt 参考', export:'导出 / 发布' };
+  document.getElementById('page-title').textContent = titles[id] || id;
+  if (id === 'export') updateExportCounts();
+}
+
+// ═══════════════════════════════════
+// RENDER EDITORS
+// ═══════════════════════════════════
+function getIssueData() {
+  const issue = appData.currentIssue;
+  if (!appData.issues[issue]) appData.issues[issue] = { news:[], products:[], hardware:[] };
+  return appData.issues[issue];
+}
+
+// — NEWS —
+function renderNews() {
+  const data = getIssueData().news;
+  const container = document.getElementById('news-editor');
+  container.innerHTML = '';
+  data.forEach((item, i) => container.appendChild(makeNewsCard(item, i)));
+}
+
+function makeNewsCard(item, i) {
+  const div = document.createElement('div');
+  div.className = 'editor-card';
+  div.innerHTML = `
+    <div class="editor-card-header">
+      <span class="editor-card-title"><span class="editor-card-num">${i+1}</span> 新闻条目</span>
+      <button class="btn btn-danger btn-sm" onclick="removeNews(${i})">删除</button>
+    </div>
+    <div class="editor-card-body">
+      <div class="field full">
+        <label>标题</label>
+        <input value="${esc(item.title)}" oninput="updateNews(${i},'title',this.value)" placeholder="新闻标题（中文，20字以内）"/>
+      </div>
+      <div class="field full">
+        <label>摘要</label>
+        <textarea oninput="updateNews(${i},'body',this.value)" placeholder="100-150字摘要">${esc(item.body)}</textarea>
+      </div>
+      <div class="field">
+        <label>标签</label>
+        <div class="tag-selector">${TAG_OPTIONS.map(t=>`<span class="tag-opt${(item.tags||[]).includes(t)?' selected':''}" onclick="toggleTag(${i},this,'${t}')">${t}</span>`).join('')}</div>
+      </div>
+      <div class="field">
+        <label>影响等级</label>
+        <div class="tag-selector">
+          <span class="impact-opt high${item.impact==='高影响'?' selected':''}" onclick="setImpact(${i},this,'高影响')">高影响</span>
+          <span class="impact-opt mid${item.impact==='中影响'?' selected':''}" onclick="setImpact(${i},this,'中影响')">中影响</span>
+          <span class="impact-opt${item.impact==='持续关注'?' selected':''}" onclick="setImpact(${i},this,'持续关注')">持续关注</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>日期</label>
+        <input value="${esc(item.date)}" oninput="updateNews(${i},'date',this.value)" placeholder="3月X日"/>
+      </div>
+      <div class="field">
+        <label>来源（名称,URL 用逗号分隔）</label>
+        <input value="${(item.sources||[]).map(s=>s.name+'|'+s.url).join('; ')}" oninput="updateNewsSources(${i},this.value)" placeholder="来源名|https://url; 来源名2|https://url2"/>
+      </div>
+    </div>`;
+  return div;
+}
+
+function updateNews(i, key, val) { getIssueData().news[i][key] = val; }
+function updateNewsSources(i, val) {
+  getIssueData().news[i].sources = val.split(';').map(s=>{ const [name,url]=(s.trim()).split('|'); return {name:(name||'').trim(),url:(url||'').trim()}; }).filter(s=>s.name);
+}
+function toggleTag(i, el, tag) {
+  const tags = getIssueData().news[i].tags || [];
+  const idx = tags.indexOf(tag);
+  if (idx === -1) tags.push(tag); else tags.splice(idx, 1);
+  getIssueData().news[i].tags = tags;
+  el.classList.toggle('selected');
+}
+function setImpact(i, el, val) {
+  getIssueData().news[i].impact = val;
+  el.closest('.tag-selector').querySelectorAll('.impact-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function removeNews(i) { getIssueData().news.splice(i,1); renderNews(); save(); }
+function addNewsCard() { getIssueData().news.push({ title:'', tags:[], impact:'中影响', date:'', body:'', sources:[] }); renderNews(); }
+
+// — PRODUCTS —
+function renderProducts() {
+  const data = getIssueData().products;
+  const container = document.getElementById('products-editor');
+  container.innerHTML = '';
+  data.forEach((item, i) => container.appendChild(makeProductCard(item, i)));
+}
+
+function makeProductCard(item, i) {
+  const div = document.createElement('div');
+  div.className = 'editor-card';
+  div.innerHTML = `
+    <div class="editor-card-header">
+      <span class="editor-card-title"><span class="editor-card-num" style="background:#1d6fa4">${i+1}</span> 产品</span>
+      <button class="btn btn-danger btn-sm" onclick="removeProduct(${i})">删除</button>
+    </div>
+    <div class="editor-card-body triple">
+      <div class="field"><label>产品名称</label><input value="${esc(item.name)}" oninput="updateProduct(${i},'name',this.value)"/></div>
+      <div class="field"><label>英文副标题</label><input value="${esc(item.en_sub||'')}" oninput="updateProduct(${i},'en_sub',this.value)"/></div>
+      <div class="field"><label>状态</label>
+        <select onchange="updateProduct(${i},'status',this.value)">
+          ${['已上线','内测中','开发中','即将发布'].map(s=>`<option${item.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field full"><label>一句话定位</label><input value="${esc(item.tagline||'')}" oninput="updateProduct(${i},'tagline',this.value)"/></div>
+      <div class="field full"><label>产品介绍</label><textarea oninput="updateProduct(${i},'body',this.value)">${esc(item.body||'')}</textarea></div>
+      <div class="field full"><label>关注点标签（逗号分隔）</label><input value="${(item.points||[]).join(',')}" oninput="updateProduct(${i},'points',this.value.split(',').map(s=>s.trim()).filter(Boolean))"/></div>
+      <div class="field full"><label>团队（姓名|职位|twitter|linkedin，多人用分号分隔）</label>
+        <input value="${(item.team||[]).map(t=>`${t.name}|${t.role}|${t.twitter||''}|${t.linkedin||''}`).join('; ')}" oninput="updateProductTeam(${i},this.value)"/>
+      </div>
+      <div class="field full"><label>来源（名称|URL，多个用分号分隔）</label>
+        <input value="${(item.sources||[]).map(s=>s.name+'|'+s.url).join('; ')}" oninput="updateProductSources(${i},this.value)"/>
+      </div>
+    </div>`;
+  return div;
+}
+
+function updateProduct(i, key, val) { getIssueData().products[i][key] = val; }
+function updateProductTeam(i, val) {
+  getIssueData().products[i].team = val.split(';').map(s=>{const [name,role,twitter,linkedin]=s.trim().split('|');return{name:(name||'').trim(),role:(role||'').trim(),twitter:(twitter||'').trim(),linkedin:(linkedin||'').trim()};}).filter(t=>t.name);
+}
+function updateProductSources(i, val) {
+  getIssueData().products[i].sources = val.split(';').map(s=>{const[name,url]=s.trim().split('|');return{name:(name||'').trim(),url:(url||'').trim()};}).filter(s=>s.name);
+}
+function removeProduct(i) { getIssueData().products.splice(i,1); renderProducts(); save(); }
+function addProductCard() { getIssueData().products.push({name:'',en_sub:'',status:'内测中',tagline:'',body:'',points:[],team:[],sources:[]}); renderProducts(); }
+
+// — HARDWARE —
+function renderHardware() {
+  const data = getIssueData().hardware;
+  const container = document.getElementById('hardware-editor');
+  container.innerHTML = '';
+  data.forEach((item, i) => container.appendChild(makeHardwareCard(item, i)));
+}
+
+function makeHardwareCard(item, i) {
+  const div = document.createElement('div');
+  div.className = 'editor-card';
+  div.innerHTML = `
+    <div class="editor-card-header">
+      <span class="editor-card-title"><span class="editor-card-num" style="background:#f4841f">${i+1}</span> 硬件产品</span>
+      <button class="btn btn-danger btn-sm" onclick="removeHardware(${i})">删除</button>
+    </div>
+    <div class="editor-card-body triple">
+      <div class="field"><label>设备名称</label><input value="${esc(item.name)}" oninput="updateHardware(${i},'name',this.value)"/></div>
+      <div class="field"><label>厂商 · 状态</label><input value="${esc(item.maker||'')}" oninput="updateHardware(${i},'maker',this.value)"/></div>
+      <div class="field"><label>Emoji 图标</label><input value="${esc(item.icon||'📦')}" oninput="updateHardware(${i},'icon',this.value)" style="font-size:20px;"/></div>
+      <div class="field full"><label>状态标签</label>
+        <select onchange="updateHardware(${i},'status_tag',this.value)">
+          ${['已上市','量产准备中','开发中','概念阶段'].map(s=>`<option${item.status_tag===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field full"><label>产品描述</label><textarea oninput="updateHardware(${i},'desc',this.value)">${esc(item.desc||'')}</textarea></div>
+      <div class="field full"><label>规格参数（标签|值，多个用分号分隔）</label>
+        <input value="${(item.specs||[]).map(s=>s.k+'|'+s.v).join('; ')}" oninput="updateHardwareSpecs(${i},this.value)"/>
+      </div>
+      <div class="field full"><label>来源（名称|URL，分号分隔）</label>
+        <input value="${(item.sources||[]).map(s=>s.name+'|'+s.url).join('; ')}" oninput="updateHardwareSources(${i},this.value)"/>
+      </div>
+    </div>`;
+  return div;
+}
+
+function updateHardware(i, key, val) { getIssueData().hardware[i][key] = val; }
+function updateHardwareSpecs(i, val) {
+  getIssueData().hardware[i].specs = val.split(';').map(s=>{const[k,v]=s.trim().split('|');return{k:(k||'').trim(),v:(v||'').trim()};}).filter(s=>s.k);
+}
+function updateHardwareSources(i, val) {
+  getIssueData().hardware[i].sources = val.split(';').map(s=>{const[name,url]=s.trim().split('|');return{name:(name||'').trim(),url:(url||'').trim()};}).filter(s=>s.name);
+}
+function removeHardware(i) { getIssueData().hardware.splice(i,1); renderHardware(); save(); }
+function addHardwareCard() { getIssueData().hardware.push({name:'',maker:'',status_tag:'开发中',icon:'📦',desc:'',specs:[],sources:[]}); renderHardware(); }
+
+// — HUB —
+function renderHub() {
+  const container = document.getElementById('hub-editor');
+  container.innerHTML = '';
+  appData.hub.forEach((c, i) => container.appendChild(makeHubCard(c, i)));
+}
+
+function makeHubCard(c, i) {
+  const initials = c.name.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2);
+  const div = document.createElement('div');
+  div.className = 'hub-edit-card';
+  div.innerHTML = `
+    <button class="delete-btn" onclick="removeContact(${i})" title="删除">×</button>
+    <div class="avatar-preview" style="background:${c.color}">${initials}</div>
+    <div class="color-picker-row">${AVATAR_COLORS.map(col=>`<div class="color-dot${c.color===col?' selected':''}" style="background:${col}" onclick="setContactColor(${i},'${col}',this)"></div>`).join('')}</div>
+    <div class="field" style="margin-top:10px"><label>姓名</label><input value="${esc(c.name)}" oninput="updateContact(${i},'name',this.value,this)"/></div>
+    <div class="field"><label>职位</label><input value="${esc(c.title||'')}" oninput="updateContact(${i},'title',this.value)"/></div>
+    <div class="field"><label>公司</label><input value="${esc(c.company||'')}" oninput="updateContact(${i},'company',this.value)"/></div>
+    <div class="field"><label>Twitter/X</label><input value="${esc(c.twitter||'')}" oninput="updateContact(${i},'twitter',this.value)" placeholder="https://x.com/..."/></div>
+    <div class="field"><label>LinkedIn</label><input value="${esc(c.linkedin||'')}" oninput="updateContact(${i},'linkedin',this.value)" placeholder="https://linkedin.com/in/..."/></div>`;
+  return div;
+}
+
+function updateContact(i, key, val, inputEl) {
+  appData.hub[i][key] = val;
+  if (key === 'name' && inputEl) {
+    const card = inputEl.closest('.hub-edit-card');
+    const initials = val.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2);
+    card.querySelector('.avatar-preview').textContent = initials;
+  }
+  save();
+}
+function setContactColor(i, color, el) {
+  appData.hub[i].color = color;
+  el.closest('.hub-edit-card').querySelector('.avatar-preview').style.background = color;
+  el.closest('.color-picker-row').querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+  save();
+}
+function removeContact(i) { appData.hub.splice(i,1); renderHub(); save(); }
+function addContact() {
+  appData.hub.push({ name:'新联系人', title:'', company:'', color:AVATAR_COLORS[appData.hub.length % AVATAR_COLORS.length], twitter:'', linkedin:'' });
+  renderHub();
+  save();
+  document.getElementById('hub-editor').lastElementChild.querySelector('input').focus();
+}
+
+// ═══════════════════════════════════
+// ISSUE MANAGEMENT
+// ═══════════════════════════════════
+function loadIssue(val) {
+  appData.currentIssue = parseInt(val);
+  const sel = document.getElementById('issue-select');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('current-issue').textContent = opt.text;
+  renderAll();
+}
+
+function saveIssueInfo() {
+  appData.issueDate = document.getElementById('issue-date').value;
+  save();
+}
+
+function newIssue() {
+  const num = Math.max(...Object.keys(appData.issues).map(Number)) + 1;
+  const date = new Date().toISOString().slice(0,10);
+  appData.issues[num] = { news:[], products:[], hardware:[] };
+  appData.currentIssue = num;
+  const sel = document.getElementById('issue-select');
+  const opt = document.createElement('option');
+  opt.value = num; opt.textContent = `第${num}期 · ${date}`;
+  sel.insertBefore(opt, sel.firstChild);
+  sel.value = num;
+  document.getElementById('current-issue').textContent = opt.textContent;
+  renderAll();
+  showStatus(`已创建第 ${num} 期`, 'success');
+}
+
+// ═══════════════════════════════════
+// SAVE / EXPORT
+// ═══════════════════════════════════
+function saveAll() { save(); }
+
+function updateExportCounts() {
+  const d = getIssueData();
+  document.getElementById('count-news').textContent = (d.news||[]).length;
+  document.getElementById('count-products').textContent = (d.products||[]).length;
+  document.getElementById('count-hardware').textContent = (d.hardware||[]).length;
+  document.getElementById('count-hub').textContent = (appData.hub||[]).length;
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sv-ai-radar-issue${appData.currentIssue}.json`;
+  a.click();
+  showStatus('JSON 已导出', 'success');
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        appData = imported;
+        save();
+        renderAll();
+        showStatus('导入成功', 'success');
+      } catch(e) { showStatus('JSON 格式有误', 'error'); }
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+  input.click();
+}
+
+function generateHTML() {
+  showStatus('正在生成前端文件…', '');
+  setTimeout(() => {
+    const json = JSON.stringify(appData);
+    const script = `<script>window.__RADAR_DATA__ = ${json};<\/script>`;
+    showStatus('✅ 请将此 script 标签注入前端 HTML 的 <head> 中，前端将自动读取数据', 'success');
+    const ta = document.createElement('textarea');
+    ta.value = script;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }, 500);
+}
+
+function copyPrompt(btn) {
+  const text = Array.from(document.querySelectorAll('.prompt-box')).map(b=>b.innerText).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).then(() => showStatus('Prompt 已复制到剪贴板', 'success'));
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function showStatus(msg, type) {
+  const bar = document.getElementById('status-bar');
+  document.getElementById('status-text').textContent = msg;
+  bar.className = 'status-bar show' + (type ? ' '+type : '');
+  clearTimeout(bar._t);
+  bar._t = setTimeout(() => bar.classList.remove('show'), 2500);
+}
+
+function renderAll() {
+  renderNews();
+  renderProducts();
+  renderHardware();
+  renderHub();
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+renderAll();
+</script>
+</body>
+</html>
